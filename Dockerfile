@@ -6,40 +6,39 @@ RUN apt-get update && \
     apt-get install -y \
     xfce4 \
     xfce4-goodies \
-    tightvncserver \
-    novnc \
-    websockify \
+    xrdp \
     wget \
     sudo \
-    supervisor && \
+    supervisor \
+    gnupg2 \
+    apt-transport-https && \
     apt-get clean
 
-# Allow root to use VNC without a password
-RUN mkdir -p /root/.vnc && \
-    echo "#!/bin/sh\nxrdb $HOME/.Xresources\nstartxfce4 &" > /root/.vnc/xstartup && \
-    chmod +x /root/.vnc/xstartup && \
-    echo 'root:root' | chpasswd
+# Install ngrok
+RUN curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+	| sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+	&& echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+	| sudo tee /etc/apt/sources.list.d/ngrok.list \
+	&& sudo apt update \
+	&& sudo apt install ngrok
+# Add ngrok authtoken
+RUN ngrok config add-authtoken 2MExnEkkUINhCYUztZ6pqFtrRJb_2ZE2neXSvVNQqY7AhWjAs
 
-# Set up the VNC server with logging
-RUN echo "#!/bin/bash\n" > /root/start-vnc.sh && \
-    echo "vncserver :1 -geometry 1280x800 -depth 24 -rfbport 5901 -log *:stderr:100" >> /root/start-vnc.sh && \
-    echo "sleep 3" >> /root/start-vnc.sh && \
-    echo "tail -f /root/.vnc/*.log" >> /root/start-vnc.sh && \
-    chmod +x /root/start-vnc.sh
+# Allow root to use XRDP without a password
+RUN mkdir -p /root/.xrdp /etc/supervisor/conf.d && \
+    echo 'root:root' | chpasswd && \
+    sed -i.bak '/^password\s*required\s*pam_unix.so/ s/^/#/' /etc/pam.d/xrdp-sesman && \
+    echo "[XSession]\nname=Xsession\nlib=libxup.so\nusername=ask\npassword=ask" > /etc/xrdp/xrdp.ini && \
+    echo "[xrdp1]\nname=Session manager\nlib=libxup.so\nip=127.0.0.1\nport=-1\ntype=vnc-any" >> /etc/xrdp/xrdp.ini
 
-# Set up websockify
-RUN mkdir -p /usr/share/novnc/utils/websockify && \
-    echo "#!/bin/sh\nwebsockify --web=/usr/share/novnc/ --wrap-mode=ignore 6901 localhost:5901" > /root/start-websockify.sh && \
-    chmod +x /root/start-websockify.sh
+# Set up supervisor configuration
+RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisor/supervisord.conf && \
+    echo "[program:xrdp-sesman]\ncommand=/usr/sbin/xrdp-sesman\n" >> /etc/supervisor/supervisord.conf && \
+    echo "[program:xrdp]\ncommand=/usr/sbin/xrdp -nodaemon\n" >> /etc/supervisor/supervisord.conf && \
+    echo "[program:ngrok]\ncommand=ngrok tcp 3389\n" >> /etc/supervisor/supervisord.conf
 
-# Set up supervisor configuration directly in Dockerfile
-RUN mkdir -p /etc/supervisor/conf.d && \
-    echo "[supervisord]\nnodaemon=true\n" > /etc/supervisor/supervisord.conf && \
-    echo "[program:vncserver]\ncommand=/root/start-vnc.sh\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/supervisor/vncserver.log\nstderr_logfile=/var/log/supervisor/vncserver_error.log\n" >> /etc/supervisor/supervisord.conf && \
-    echo "[program:websockify]\ncommand=/root/start-websockify.sh\nautostart=true\nautorestart=true\nstdout_logfile=/var/log/supervisor/websockify.log\nstderr_logfile=/var/log/supervisor/websockify_error.log\n" >> /etc/supervisor/supervisord.conf
+# Expose the RDP port
+EXPOSE 3389
 
-# Expose the VNC and websockify ports
-EXPOSE 5901 6901
-
-# Start supervisor to manage VNC and websockify
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Start supervisor to manage XRDP and ngrok
+CMD ["/usr/bin/supervisord"]
