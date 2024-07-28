@@ -1,17 +1,45 @@
-# Use the official PufferPanel image from Docker Hub
-FROM pufferpanel/pufferpanel:latest
+# Use a base image compatible with Raspberry Pi
+FROM arm32v7/debian:latest
 
-# Set environment variables for PufferPanel
-ENV DB_HOST=db
-ENV DB_PORT=3306
-ENV DB_NAME=pufferpanel
-ENV DB_USER=pufferpanel
-ENV DB_PASS=password
-ENV PANEL_ADMIN_EMAIL=admin@example.com
-ENV PANEL_ADMIN_PASSWORD=admin
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    xfce4 \
+    xfce4-goodies \
+    tightvncserver \
+    novnc \
+    websockify \
+    supervisor \
+    xterm \
+    wget
 
-# Expose the port that PufferPanel runs on
-EXPOSE 8080
+# Create necessary directories
+RUN mkdir -p /root/.vnc /etc/supervisor/conf.d /usr/share/novnc/utils/websockify
 
-# Run PufferPanel
-CMD ["pufferpanel", "run"]
+# Set up the VNC startup script
+RUN echo '#!/bin/sh\n' > /root/.vnc/xstartup && \
+    echo 'xrdb $HOME/.Xresources\n' >> /root/.vnc/xstartup && \
+    echo 'startxfce4 &' >> /root/.vnc/xstartup && \
+    chmod +x /root/.vnc/xstartup
+
+# Set up the VNC server
+RUN echo '#!/bin/sh\n' > /root/start-vnc.sh && \
+    echo 'vncserver :1 -geometry 1280x800 -depth 24 -rfbport 5901' >> /root/start-vnc.sh && \
+    chmod +x /root/start-vnc.sh
+
+# Set up websockify
+RUN echo '#!/bin/sh\n' > /root/start-websockify.sh && \
+    echo 'websockify --web=/usr/share/novnc/ --wrap-mode=ignore --cert=/root/self.pem 6901 localhost:5901' >> /root/start-websockify.sh && \
+    chmod +x /root/start-websockify.sh
+
+# Set up supervisor configuration
+RUN echo '[supervisord]\nnodaemon=true\n' > /etc/supervisor/supervisord.conf && \
+    echo '[program:vncserver]\ncommand=/root/start-vnc.sh\nautorestart=true\n' >> /etc/supervisor/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/supervisor/vncserver.log\nstderr_logfile=/var/log/supervisor/vncserver_error.log\n' >> /etc/supervisor/supervisord.conf && \
+    echo '[program:websockify]\ncommand=/root/start-websockify.sh\nautorestart=true\n' >> /etc/supervisor/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/supervisor/websockify.log\nstderr_logfile=/var/log/supervisor/websockify_error.log\n' >> /etc/supervisor/supervisord.conf
+
+# Expose the VNC and websockify ports
+EXPOSE 5901 6901
+
+# Start supervisor to manage VNC and websockify
+CMD ["/usr/bin/supervisord"]
