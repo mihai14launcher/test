@@ -22,7 +22,7 @@ RUN mkdir -p /root/.vnc && \
 
 # Set up the VNC server with logging
 RUN echo "#!/bin/bash\n" > /root/start-vnc.sh && \
-    echo "vncserver :1 -geometry 1280x800 -depth 24 -rfbport 5901" >> /root/start-vnc.sh && \
+    echo "vncserver :1 -geometry 1280x800 -depth 24 -rfbport 5901 -log *:stderr:100" >> /root/start-vnc.sh && \
     echo "sleep 3" >> /root/start-vnc.sh && \
     echo "tail -f /root/.vnc/*.log" >> /root/start-vnc.sh && \
     chmod +x /root/start-vnc.sh
