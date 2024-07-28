@@ -15,14 +15,14 @@ RUN apt-get update && \
     apt-get clean
 
 # Install ngrok
-RUN curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-	| sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
-	&& echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
-	| sudo tee /etc/apt/sources.list.d/ngrok.list \
-	&& sudo apt update \
-	&& sudo apt install ngrok
+RUN wget -qO - https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc \
+    && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list \
+    && sudo apt update \
+    && sudo apt install -y ngrok
+
 # Add ngrok authtoken
-RUN ngrok config add-authtoken 2MExnEkkUINhCYUztZ6pqFtrRJb_2ZE2neXSvVNQqY7AhWjAs
+ARG 2MExnEkkUINhCYUztZ6pqFtrRJb_2ZE2neXSvVNQqY7AhWjAs
+RUN ngrok config add-authtoken $NGROK_AUTHTOKEN
 
 # Allow root to use XRDP without a password
 RUN mkdir -p /root/.xrdp /etc/supervisor/conf.d && \
