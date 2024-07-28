@@ -22,7 +22,7 @@ RUN wget -qO - https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/ap
 
 # Add ngrok authtoken
 ARG 2MExnEkkUINhCYUztZ6pqFtrRJb_2ZE2neXSvVNQqY7AhWjAs
-RUN ngrok config add-authtoken $NGROK_AUTHTOKEN
+RUN ngrok config add-authtoken ${NGROK_AUTHTOKEN}
 
 # Allow root to use XRDP without a password
 RUN mkdir -p /root/.xrdp /etc/supervisor/conf.d && \
