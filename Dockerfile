@@ -20,8 +20,11 @@ RUN mkdir -p /root/.vnc && \
     chmod +x /root/.vnc/xstartup && \
     echo 'root:root' | chpasswd
 
-# Set up the VNC server
-RUN echo "#!/bin/sh\nvncserver :1 -geometry 1280x800 -depth 24 -rfbport 5901" > /root/start-vnc.sh && \
+# Set up the VNC server with logging
+RUN echo "#!/bin/bash\n" > /root/start-vnc.sh && \
+    echo "vncserver :1 -geometry 1280x800 -depth 24 -rfbport 5901" >> /root/start-vnc.sh && \
+    echo "sleep 3" >> /root/start-vnc.sh && \
+    echo "tail -f /root/.vnc/*.log" >> /root/start-vnc.sh && \
     chmod +x /root/start-vnc.sh
 
 # Set up websockify
@@ -40,4 +43,3 @@ EXPOSE 5901 6901
 
 # Start supervisor to manage VNC and websockify
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
-
