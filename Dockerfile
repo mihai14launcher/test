@@ -1,43 +1,26 @@
-# Use the official Ubuntu image as the base image
+# Use the official Ubuntu image as a base
 FROM ubuntu:latest
 
-# Install necessary packages
+# Install required packages and update the system
 RUN apt-get update && \
-    apt-get install -y \
-    xfce4 \
-    xfce4-goodies \
-    xrdp \
-    wget \
-    sudo \
-    supervisor \
-    gnupg2 \
-    apt-transport-https && \
-    apt-get clean
+    apt-get upgrade -y && \
+    apt-get install -y curl wget unzip tar zip git npm && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install ngrok
-RUN wget -qO - https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc \
-    && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list \
-    && sudo apt update \
-    && sudo apt install -y ngrok
+# Clone the Uptime Kuma repository
+RUN git clone https://github.com/louislam/uptime-kuma.git /opt/uptime-kuma
 
-# Add ngrok authtoken
-RUN ngrok config add-authtoken 2MExnEkkUINhCYUztZ6pqFtrRJb_2ZE2neXSvVNQqY7AhWjAs
+# Set working directory
+WORKDIR /opt/uptime-kuma
 
-# Allow root to use XRDP without a password
-RUN mkdir -p /root/.xrdp /etc/supervisor/conf.d && \
-    echo 'root:root' | chpasswd && \
-    sed -i.bak '/^password\s*required\s*pam_unix.so/ s/^/#/' /etc/pam.d/xrdp-sesman && \
-    echo "[XSession]\nname=Xsession\nlib=libxup.so\nusername=ask\npassword=ask" > /etc/xrdp/xrdp.ini && \
-    echo "[xrdp1]\nname=Session manager\nlib=libxup.so\nip=127.0.0.1\nport=-1\ntype=vnc-any" >> /etc/xrdp/xrdp.ini
+# Install Uptime Kuma dependencies and set up the application
+RUN npm run setup && \
+    npm install pm2 -g && \
+    pm2 install pm2-logrotate
 
-# Set up supervisor configuration
-RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisor/supervisord.conf && \
-    echo "[program:xrdp-sesman]\ncommand=/usr/sbin/xrdp-sesman\n" >> /etc/supervisor/supervisord.conf && \
-    echo "[program:xrdp]\ncommand=/usr/sbin/xrdp -nodaemon\n" >> /etc/supervisor/supervisord.conf && \
-    echo "[program:ngrok]\ncommand=ngrok tcp 3389\n" >> /etc/supervisor/supervisord.conf
+# Expose the default port for Uptime Kuma
+EXPOSE 3001
 
-# Expose the RDP port
-EXPOSE 3389
-
-# Start supervisor to manage XRDP and ngrok
-CMD ["/usr/bin/supervisord"]
+# Start Uptime Kuma using PM2
+CMD ["pm2-runtime", "start", "server/server.js", "--name", "uptime-kuma"]
