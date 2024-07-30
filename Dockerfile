@@ -1,26 +1,39 @@
-# Use the official Ubuntu image as a base
+# Use the official Ubuntu image as the base image
 FROM ubuntu:latest
 
-# Install required packages and update the system
+# Install necessary packages
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y curl wget unzip tar zip git npm && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y \
+    wget \
+    sudo \
+    supervisor \
+    openssh-server \
+    curl \
+    gnupg2 \
+    apt-transport-https && \
+    apt-get clean
 
-# Clone the Uptime Kuma repository
-RUN git clone https://github.com/louislam/uptime-kuma.git /opt/uptime-kuma
+# Install GoTTY
+RUN wget -O gotty.tar.gz https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz && \
+    tar -xvf gotty.tar.gz -C /usr/local/bin && \
+    rm gotty.tar.gz
 
-# Set working directory
-WORKDIR /opt/uptime-kuma
+# Allow root to use SSH without a password
+RUN echo 'root:root' | chpasswd
 
-# Install Uptime Kuma dependencies and set up the application
-RUN npm run setup && \
-    npm install pm2 -g && \
-    pm2 install pm2-logrotate
+# Configure SSH server
+RUN mkdir -p /var/run/sshd && \
+    echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
+    echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
 
-# Expose the default port for Uptime Kuma
-EXPOSE 3001
+# Set up supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d
+RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisor/supervisord.conf && \
+    echo "[program:sshd]\ncommand=/usr/sbin/sshd -D\n" >> /etc/supervisor/supervisord.conf && \
+    echo "[program:gotty]\ncommand=/usr/local/bin/gotty -w --port 8080 --permit-write --permit-arguments /bin/bash\n" >> /etc/supervisor/supervisord.conf
 
-# Start Uptime Kuma using PM2
-CMD ["pm2-runtime", "start", "server/server.js", "--name", "uptime-kuma"]
+# Expose the web terminal port
+EXPOSE 8080
+
+# Start supervisor to manage SSH and GoTTY
+CMD ["/usr/bin/supervisord"]
