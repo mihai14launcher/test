@@ -6,3 +6,5 @@ export TERM=xterm
 #Create the user
 sudo pufferpanel user add --email puff@docker.local --name Docker --password pufferpanel
 
+# Say hello because why not.
+echo 'Hello'
