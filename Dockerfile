@@ -34,5 +34,8 @@ RUN sudo systemctl enable --now pufferpanel
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+EXPOSE 5657
+EXPOSE 8080
+
 # Starting pufferpanel
 CMD ["/start.sh"]
