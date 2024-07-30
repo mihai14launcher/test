@@ -3,8 +3,6 @@
 # Set the TERM environment variable
 export TERM=xterm
 
-# Start the SSH server
-/usr/sbin/sshd -D &
+#Create the user
+sudo pufferpanel user add --email puff@docker.local --username Docker --password pufferpanel
 
-# Start GoTTY
-/usr/local/bin/gotty -w -c 'root:root' --port 8080 /bin/bash
