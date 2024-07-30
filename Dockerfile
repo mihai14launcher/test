@@ -29,6 +29,7 @@ RUN apt install neofetch -y
 
 RUN curl -s https://packagecloud.io/install/repositories/pufferpanel/pufferpanel/script.deb.sh | sudo os=ubuntu dist=jammy bash
 RUN sudo apt-get install pufferpanel
+RUN sudo pufferpanel user add --email puff@docker.local --name Docker --password pufferpanel
 RUN sudo systemctl enable --now pufferpanel
 
 # Start the instant script
@@ -39,4 +40,4 @@ EXPOSE 5657
 EXPOSE 8080
 
 # Starting pufferpanel
-CMD ["/start.sh"]
+CMD ["bash"]
