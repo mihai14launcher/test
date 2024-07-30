@@ -36,4 +36,4 @@ RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisor/supervisord.conf && 
 EXPOSE 8080
 
 # Start supervisor to manage SSH and GoTTY
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
