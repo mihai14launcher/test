@@ -22,7 +22,7 @@ RUN curl -s https://packagecloud.io/install/repositories/pufferpanel/pufferpanel
     apt-get clean
 
 # Add a PufferPanel user
-RUN pufferpanel user add --email puff@docker.local --username Docker --password pufferpanel
+RUN pufferpanel user add --email puff@docker.local --name Docker --password pufferpanel
 
 # Expose the ports used by PufferPanel
 EXPOSE 5657
