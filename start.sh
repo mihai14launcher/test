@@ -4,5 +4,5 @@
 export TERM=xterm
 
 #Create the user
-sudo pufferpanel user add --email puff@docker.local --username Docker --password pufferpanel
+sudo pufferpanel user add --email puff@docker.local --name Docker --password pufferpanel
 
