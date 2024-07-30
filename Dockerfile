@@ -19,7 +19,6 @@ RUN apt install wget -y
 RUN apt install curl -y
 RUN apt install zip -y
 RUN apt install tar -y
-RUN apt install untar -y
 RUN apt install nano -y
 RUN apt install htop -y
 RUN apt install neofetch -y
