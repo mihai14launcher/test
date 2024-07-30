@@ -6,7 +6,6 @@ RUN apt-get update && \
     apt-get install -y \
     wget \
     sudo \
-    supervisor \
     openssh-server \
     curl \
     gnupg2 \
@@ -26,14 +25,12 @@ RUN mkdir -p /var/run/sshd && \
     echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
     echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
 
-# Set up supervisor configuration
-RUN mkdir -p /etc/supervisor/conf.d
-RUN echo "[supervisord]\nnodaemon=true\n" > /etc/supervisor/supervisord.conf && \
-    echo "[program:sshd]\ncommand=/usr/sbin/sshd -D\n" >> /etc/supervisor/supervisord.conf && \
-    echo "[program:gotty]\ncommand=/usr/local/bin/gotty -w --port 8080 --permit-write --permit-arguments /bin/bash\n" >> /etc/supervisor/supervisord.conf
+# Copy the start script into the image
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 # Expose the web terminal port
 EXPOSE 8080
 
-# Start supervisor to manage SSH and GoTTY
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Set the default command to run the start script
+CMD ["/start.sh"]
