@@ -1,35 +1,39 @@
-# Use the official Kali Linux image as the base image
-FROM kalilinux/kali-rolling
+# A pufferpanel Docker Image that runs inside of a Docker Container like a Dind (Docker in Docker)
+# Using Base image Ubuntu
+FROM ubuntu:latest
 
-# Install necessary packages
-RUN apt-get update && \
-    apt-get install -y \
-    wget \
-    sudo \
-    openssh-server \
-    curl \
-    gnupg2 \
-    apt-transport-https \
-    bash \
-    && apt-get clean
+# Update the system
+RUN apt-get update -y
+RUN apt-get upgrade -y
 
-# Install GoTTY
-RUN wget -O gotty.tar.gz https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz && \
-    tar -xvf gotty.tar.gz -C /usr/local/bin && \
-    rm gotty.tar.gz
+# Create user root
+RUN echo 'root:root' | chpasswd
 
-# Configure SSH server
-RUN mkdir -p /var/run/sshd && \
-    echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
-    echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config && \
-    echo 'root:root' | chpasswd
+# Install systemctl
+RUN apt install systemctl -y
 
-# Set up GoTTY to start on port 8080
+# Install essentials packages
+
+RUN apt install sudo -y
+RUN apt install wget -y
+RUN apt install curl -y
+RUN apt install zip -y
+RUN apt install tar -y
+RUN apt install untar -y
+RUN apt install nano -y
+RUN apt install htop -y
+RUN apt install neofetch -y
+
+
+# Starting to download pufferpanel
+
+RUN curl -s https://packagecloud.io/install/repositories/pufferpanel/pufferpanel/script.deb.sh | sudo os=ubuntu dist=jammy bash
+RUN sudo apt-get install pufferpanel
+RUN sudo systemctl enable --now pufferpanel
+
+# Start the instant script
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-# Expose the ports
-EXPOSE 22 8080
-
-# Set the default command to run the start script
+# Starting pufferpanel
 CMD ["/start.sh"]
