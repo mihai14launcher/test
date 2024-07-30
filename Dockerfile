@@ -2,12 +2,13 @@
 # Using Base image Ubuntu
 FROM ubuntu:latest
 
-# Update the system
-RUN apt-get update -y
-RUN apt-get upgrade -y
-
-# Create user root
-RUN echo 'root:root' | chpasswd
+# Update the system and install some packages
+RUN apt-get update && \
+    apt-get install -y python3-pip && \
+    echo 'root:root' | chpasswd && \
+    printf '#!/bin/sh\nexit 0' > /usr/sbin/policy-rc.d && \
+    apt-get install -y systemd systemd-sysv dbus dbus-user-session && \
+    printf "systemctl start systemd-logind" >> /etc/profile
 
 # Install systemctl
 RUN apt install systemctl -y
