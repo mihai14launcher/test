@@ -25,6 +25,9 @@ RUN mkdir -p /var/run/sshd && \
     echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
     echo 'PasswordAuthentication yes' >> /etc/ssh/sshd_config
 
+# Set the TERM environment variable
+ENV TERM=xterm
+
 # Copy the start script into the image
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
